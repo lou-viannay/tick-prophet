@@ -18,7 +18,7 @@ WORKDIR /wheels
 RUN python -m pip install --upgrade pip 
 # fbprophet fails if we just build wheel, install first, then build wheel
 RUN python -m pip install fbprophet
-RUN python -m pip wheel fbprophet
+RUN python -m pip wheel fbprophet pytk
 
 # ENV KAPACITOR_VERSION 1.4.0
 ENV KAPACITOR_VERSION 1.5.7
@@ -34,17 +34,21 @@ RUN wget https://dl.influxdata.com/kapacitor/releases/python-kapacitor_udf-${KAP
 FROM python:${PYTHON_VERSION}
 ENV PYTHONUNBUFFERED 1
 RUN apk add --no-cache \
-    --upgrade  \
-    py-pip \
-    libstdc++
+            --upgrade  \
+            zlib \
+            jpeg \
+            musl \
+            py-pip \
+            libstdc++ \
+    && rm -rf /var/cache/apk/*
+
 
 COPY --from=builder /wheels /wheels
 RUN python -m pip install --upgrade pip \
     && python -m pip install --no-cache-dir \
-                 -f /wheels fbprophet pandas numpy protobuf kapacitor_udf \
+                 -f /wheels fbprophet pandas numpy protobuf kapacitor_udf pytk \
     && rm -rf /wheels
-RUN ls -lha 
-RUN echo "backend: TkAgg" > matplotlibrc
+# RUN echo "backend: TkAgg" > matplotlibrc
 ADD prophet_udf.py /usr/bin/prophet_udf
 VOLUME /var/lib/prophet/
 
