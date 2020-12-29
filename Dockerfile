@@ -1,24 +1,24 @@
 # FROM ubuntu:18.04
-ARG PYTHON_VERSION=3.6.12-slim
+ARG PYTHON_VERSION=3.6-alpine
 FROM python:${PYTHON_VERSION} as builder
 ENV PYTHONUNBUFFERED 1
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update  \
-    && apt-get install -y \
-    apt-utils \
-    python3-pip \
+RUN apk add --no-cache \
+    --upgrade \
+    alpine-sdk \
+    zlib-dev \
+    jpeg-dev \
+    musl-dev \
+    py-pip \
+    cython \
     wget
 WORKDIR /wheels
-
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 \
-    && update-alternatives --install /usr/local/bin/python python /usr/bin/python3 2 
-    # && python3 -m pip wheel numpy==1.15.4 pandas protobuf pystan ephem==3.7.5.3 convertdate==2.1.2
 
 RUN python -m pip install --upgrade pip 
 # fbprophet fails if we just build wheel, install first, then build wheel
 RUN python -m pip install fbprophet
-RUN python -m pip wheel fbprophet
+RUN python -m pip wheel python-tkinter fbprophet
 
 # ENV KAPACITOR_VERSION 1.4.0
 ENV KAPACITOR_VERSION 1.5.7
@@ -33,18 +33,18 @@ RUN wget https://dl.influxdata.com/kapacitor/releases/python-kapacitor_udf-${KAP
 
 FROM python:${PYTHON_VERSION}
 ENV PYTHONUNBUFFERED 1
-RUN apt-get update  \
-    && apt-get install -y \
-    python3-pip 
+RUN apk add --no-cache \
+    --upgrade  \
+    py-pip \
+    libstdc++
 
 COPY --from=builder /wheels /wheels
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 \
-    && update-alternatives --install /usr/local/bin/python python /usr/bin/python3 2 
 RUN python -m pip install --upgrade pip \
     && python -m pip install --no-cache-dir \
-                 -f /wheels  fbprophet pandas numpy protobuf kapacitor_udf \
+                 -f /wheels  python-tkinter fbprophet pandas numpy protobuf kapacitor_udf \
     && rm -rf /wheels
-
+RUN ls -lha 
+RUN echo "backend: TkAgg" > matplotlibrc
 ADD prophet_udf.py /usr/bin/prophet_udf
 VOLUME /var/lib/prophet/
 
