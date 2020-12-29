@@ -18,7 +18,7 @@ WORKDIR /wheels
 RUN python -m pip install --upgrade pip 
 # fbprophet fails if we just build wheel, install first, then build wheel
 RUN python -m pip install fbprophet
-RUN python -m pip wheel python-tkinter fbprophet
+RUN python -m pip wheel fbprophet
 
 # ENV KAPACITOR_VERSION 1.4.0
 ENV KAPACITOR_VERSION 1.5.7
@@ -41,7 +41,7 @@ RUN apk add --no-cache \
 COPY --from=builder /wheels /wheels
 RUN python -m pip install --upgrade pip \
     && python -m pip install --no-cache-dir \
-                 -f /wheels  python-tkinter fbprophet pandas numpy protobuf kapacitor_udf \
+                 -f /wheels fbprophet pandas numpy protobuf kapacitor_udf \
     && rm -rf /wheels
 RUN ls -lha 
 RUN echo "backend: TkAgg" > matplotlibrc
